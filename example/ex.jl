@@ -1,7 +1,7 @@
 using Quaternions
 using QuaternionFourierTransform
 using Images
-using Color
+using Colors
 using TestImages
 
 function saveimg{T<:Real}(x::AbstractArray{Quaternion{T}},fname::String)
@@ -25,7 +25,6 @@ end
 
 # load image
 img = testimage("lena_color_256")
-img = imread("test.png")
 
 
 # create quaternion matrix from image data
@@ -34,7 +33,6 @@ g = float(green(img.data))
 b = float(blue(img.data))
 rezero = zeros(size(img))
 qmat = quaternion(rezero, r, g, b)
-
 
 # execute qft
 q_qft = qft(qmat)
