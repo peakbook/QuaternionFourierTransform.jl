@@ -28,10 +28,10 @@ iqmat = iqft(qfreq)
 # ...
 ```
 
-You can specify the orthonormal basis like this.
+You can specify the orthonormal basis like this. Default is `QuaternionFourierTransform.defaultbasis`
 ```julia
-mu = [quaternion(0,1,0,0),quaternion(0,0,1,0),quaternion(0,0,0,1)]
-qft(m, mu)
+q = (quaternion(0,1,0,0),quaternion(0,0,1,0),quaternion(0,0,0,1))
+qft(m, mu=q)
 ```
 
 ## Reference
