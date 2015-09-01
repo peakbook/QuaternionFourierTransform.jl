@@ -24,13 +24,13 @@ end
 
 function qft_l{T<:Real,S<:Real}(x::AbstractArray{Quaternion{T}}, ft::Function, mus::NTuple{3,Quaternion{S}})
     a, b, c, d = trans_l(x, mus)
-    fc1, fc2 = qftcore(a, b, c, d, ft)
+    fc1, fc2 = ft(complex(a, b)), ft(complex(c, d))
     itrans_l(real(fc1), imag(fc1), real(fc2), imag(fc2), mus)
 end
 
 function qft_r{T<:Real,S<:Real}(x::AbstractArray{Quaternion{T}}, ft::Function, mus::NTuple{3,Quaternion{S}})
     a, b, c, d = trans_r(x, mus)
-    fc1, fc2 = qftcore(a, b, c, d, ft)
+    fc1, fc2 = ft(complex(a, b)), ft(complex(c, d))
     itrans_r(real(fc1), imag(fc1), real(fc2), imag(fc2), mus)
 end
 
@@ -61,25 +61,21 @@ function orthonormal_basis(m1::Quaternion, m2::Quaternion, m3::Quaternion)
     return (m1,m2,m3)
 end
 
-function qftcore{T<:Real}(a::AbstractArray{T}, b::AbstractArray{T}, c::AbstractArray{T}, d::AbstractArray{T}, ft::Function)
-    return ft(complex(a, b)), ft(complex(c, d))
-end
-
-function trans_l{T<:Real,S<:Real}(x::AbstractArray{Quaternion{T}}, mus::Union(Quaternion{S},NTuple{3,Quaternion{S}}))
+function trans_l{T<:Real,S<:Real}(x::AbstractArray{Quaternion{T}}, mus::NTuple{3,Quaternion{S}})
     x_im = imag(x)
     return real(x), -real(map(x->x|mus[1],x_im)), -real(map(x->x|mus[2],x_im)), -real(map(x->x|mus[3],x_im))
 end
 
-function itrans_l{T<:Real,S<:Real}(a::AbstractArray{T}, b::AbstractArray{T}, c::AbstractArray{T}, d::AbstractArray{T}, mus::Union(Quaternion{S},NTuple{3,Quaternion{S}}))
+function itrans_l{T<:Real,S<:Real}(a::AbstractArray{T}, b::AbstractArray{T}, c::AbstractArray{T}, d::AbstractArray{T}, mus::NTuple{3,Quaternion{S}})
     return a + b*mus[1] + c*mus[2] + d*mus[3]
 end
 
-function trans_r{T<:Real,S<:Real}(x::AbstractArray{Quaternion{T}}, mus::Union(Quaternion{S},NTuple{3,Quaternion{S}}))
+function trans_r{T<:Real,S<:Real}(x::AbstractArray{Quaternion{T}}, mus::NTuple{3,Quaternion{S}})
     x_im = imag(x)
     return real(x), -real(map(x->x|mus[1],x_im)), -real(map(x->x|mus[3],x_im)), -real(map(x->x|mus[2],x_im))
 end
 
-function itrans_r{T<:Real,S<:Real}(a::AbstractArray{T}, b::AbstractArray{T}, c::AbstractArray{T}, d::AbstractArray{T}, mus::Union(Quaternion{S},NTuple{3,Quaternion{S}}))
+function itrans_r{T<:Real,S<:Real}(a::AbstractArray{T}, b::AbstractArray{T}, c::AbstractArray{T}, d::AbstractArray{T}, mus::NTuple{3,Quaternion{S}})
     return a + b*mus[1] + c*mus[3] + d*mus[2]
 end
 
