@@ -41,7 +41,7 @@ function orthonormal_basis(m1::Quaternion)
     m1 /= norm(m1)
     m2 /= norm(m2)
     m3 /= norm(m3)
-    return orthonormal_basis(m1,m2,m3)
+    return orthonormal_basis(m1,m3,m2)
 end
 
 function orthonormal_basis(m1::Quaternion, m2::Quaternion, m3::Quaternion)
