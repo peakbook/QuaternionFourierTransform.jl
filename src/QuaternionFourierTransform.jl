@@ -4,7 +4,7 @@ using Quaternions
 export qft, iqft
 const defaultbasis = quaternion(0,1,1,1)/sqrt(3)
 
-function qft{T<:Real}(x::AbstractArray{Quaternion{T}}, mu=defaultbasis, LR=false::Bool)
+function qft{T<:Real,S<:Real}(x::AbstractArray{Quaternion{T}}; mu::Union(Quaternion{S},NTuple{3,Quaternion{S}})=defaultbasis, LR::Bool=false)
     mus = orthonormal_basis(mu...)
     if LR # false: Left, true: Right
         qft_r(x,fft,mus)
@@ -13,7 +13,7 @@ function qft{T<:Real}(x::AbstractArray{Quaternion{T}}, mu=defaultbasis, LR=false
     end
 end
 
-function iqft{T<:Real}(x::AbstractArray{Quaternion{T}}, mu=defaultbasis, LR=false::Bool)
+function iqft{T<:Real,S<:Real}(x::AbstractArray{Quaternion{T}}; mu::Union(Quaternion{S},NTuple{3,Quaternion{S}})=defaultbasis, LR::Bool=false)
     mus = orthonormal_basis(mu...)
     if LR # false: Left, true: Right
         qft_r(x,ifft,mus)
@@ -22,46 +22,16 @@ function iqft{T<:Real}(x::AbstractArray{Quaternion{T}}, mu=defaultbasis, LR=fals
     end
 end
 
-function qft_l{T<:Real,S<:Real}(x::AbstractArray{Quaternion{T}}, ft::Function, mus::AbstractArray{Quaternion{S}})
-    x_im = imag(x)
-    a_ = real(x)
-    b_ = -real(map(x->x|mus[1],x_im))
-    c_ = -real(map(x->x|mus[2],x_im))
-    d_ = -real(map(x->x|mus[3],x_im))
-
-    c1 = complex(a_, b_)
-    c2 = complex(c_, d_)
-    fc1 = ft(c1)
-    fc2 = ft(c2)
-
-    x_t = real(fc1) + imag(fc1)*mus[1] + real(fc2)*mus[2] + imag(fc2)*mus[3]
-    a = real(x_t)
-    b = imagi(x_t)
-    c = imagj(x_t)
-    d = imagk(x_t)
-
-    return quaternion(a,b,c,d)
+function qft_l{T<:Real,S<:Real}(x::AbstractArray{Quaternion{T}}, ft::Function, mus::NTuple{3,Quaternion{S}})
+    a, b, c, d = trans_l(x, mus)
+    fc1, fc2 = qftcore(a, b, c, d, ft)
+    itrans_l(real(fc1), imag(fc1), real(fc2), imag(fc2), mus)
 end
 
-function qft_r{T<:Real,S<:Real}(x::AbstractArray{Quaternion{T}}, ft::Function, mus::AbstractArray{Quaternion{S}})
-    x_im = imag(x)
-    a_ = real(x)
-    b_ = -real(map(x->x|mus[1],x_im))
-    c_ = -real(map(x->x|mus[3],x_im))
-    d_ = -real(map(x->x|mus[2],x_im))
-
-    c1 = complex(a_, b_)
-    c2 = complex(c_, d_)
-    fc1 = ft(c1)
-    fc2 = ft(c2)
-
-    x_t = real(fc1) + imag(fc1)*mus[1] + real(fc2)*mus[3] + imag(fc2)*mus[2]
-    a = real(x_t)
-    b = imagi(x_t)
-    c = imagj(x_t)
-    d = imagk(x_t)
-
-    return quaternion(a,b,c,d)
+function qft_r{T<:Real,S<:Real}(x::AbstractArray{Quaternion{T}}, ft::Function, mus::NTuple{3,Quaternion{S}})
+    a, b, c, d = trans_r(x, mus)
+    fc1, fc2 = qftcore(a, b, c, d, ft)
+    itrans_r(real(fc1), imag(fc1), real(fc2), imag(fc2), mus)
 end
 
 function orthonormal_basis(m1::Quaternion)
@@ -88,29 +58,29 @@ function orthonormal_basis(m1::Quaternion, m2::Quaternion, m3::Quaternion)
         warn("The basis matrix is not accurately orthogonal.")
     end
 
-    return [m1,m2,m3]
+    return (m1,m2,m3)
 end
 
-function trans_l{T<:Real}(x::AbstractArray{Quaternion{T}}, mus)
-    mus = orthonormal_basis(mus...)
+function qftcore{T<:Real}(a::AbstractArray{T}, b::AbstractArray{T}, c::AbstractArray{T}, d::AbstractArray{T}, ft::Function)
+    return ft(complex(a, b)), ft(complex(c, d))
+end
+
+function trans_l{T<:Real,S<:Real}(x::AbstractArray{Quaternion{T}}, mus::Union(Quaternion{S},NTuple{3,Quaternion{S}}))
     x_im = imag(x)
-    return quaternion(real(x), -real(map(x->x|mus[1],x_im)), -real(map(x->x|mus[2],x_im)), -real(map(x->x|mus[3],x_im)))
+    return real(x), -real(map(x->x|mus[1],x_im)), -real(map(x->x|mus[2],x_im)), -real(map(x->x|mus[3],x_im))
 end
 
-function itrans_l{T<:Real}(x::AbstractArray{Quaternion{T}}, mus)
-    mus = orthonormal_basis(mus...)
-    return real(x) + imagi(x)*mus[1] + imagj(x)*mus[2] + imagk(x)*mus[3]
+function itrans_l{T<:Real,S<:Real}(a::AbstractArray{T}, b::AbstractArray{T}, c::AbstractArray{T}, d::AbstractArray{T}, mus::Union(Quaternion{S},NTuple{3,Quaternion{S}}))
+    return a + b*mus[1] + c*mus[2] + d*mus[3]
 end
 
-function trans_r{T<:Real}(x::AbstractArray{Quaternion{T}}, mus)
-    mus = orthonormal_basis(mus...)
+function trans_r{T<:Real,S<:Real}(x::AbstractArray{Quaternion{T}}, mus::Union(Quaternion{S},NTuple{3,Quaternion{S}}))
     x_im = imag(x)
-    return quaternion(real(x), -real(map(x->x|mus[1],x_im)), -real(map(x->x|mus[3],x_im)), -real(map(x->x|mus[2],x_im)))
+    return real(x), -real(map(x->x|mus[1],x_im)), -real(map(x->x|mus[3],x_im)), -real(map(x->x|mus[2],x_im))
 end
 
-function itrans_r{T<:Real}(x::AbstractArray{Quaternion{T}}, mus)
-    mus = orthonormal_basis(mus...)
-    return real(x) + imagi(x)*mus[1] + imagj(x)*mus[3] + imagk(x)*mus[2]
+function itrans_r{T<:Real,S<:Real}(a::AbstractArray{T}, b::AbstractArray{T}, c::AbstractArray{T}, d::AbstractArray{T}, mus::Union(Quaternion{S},NTuple{3,Quaternion{S}}))
+    return a + b*mus[1] + c*mus[3] + d*mus[2]
 end
 
 end # module
