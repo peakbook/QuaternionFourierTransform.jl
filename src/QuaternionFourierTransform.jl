@@ -87,9 +87,9 @@ function qconv2{T<:Quaternion}(A::AbstractArray{T}, B::AbstractArray{T}; mu::Uni
     Bt[1:sb[1], 1:sb[2]] = B
 
     fC = if LR == :left
-        qconv2_l(At,Bt,mus)
+        qconv2_l(At, Bt, mus)
     elseif LR == :right
-        qconv2_r(At,Bt,mus)
+        qconv2_r(At, Bt, mus)
     else
         error("LR must be :left or :right.")
     end
@@ -97,41 +97,37 @@ function qconv2{T<:Quaternion}(A::AbstractArray{T}, B::AbstractArray{T}; mu::Uni
 end
 
 function qconv2_l(At,Bt,mus)
-    mmus = (-mus[1],-mus[2],mus[3])
+    mmus = (-mus[1], -mus[2], mus[3])
     Aa, Ab, Ac, Ad = change_basis_core(At, mus)
-    Bpa, Bpb, Bpc, Bpd = change_basis_core(Bt, mus)
+    Ba, Bb, Bc, Bd = change_basis_core(Bt, mus)
 
     CA1, CA2 = complex(Aa, Ab), complex(Ac, Ad)
-    CBp1, CBp2 = complex(Bpa, Bpb), complex(Bpc, Bpd)
-    CBm1, CBm2 = complex(Bpa, -Bpb), complex(-Bpc, Bpd)
+    CB1, CB2 = complex(Ba, Bb), complex(Bc, Bd)
 
     p = plan_fft(CA1)
     fCA1, fCA2 = p(CA1), p(CA2)
-    fCBp1, fCBp2 = p(CBp1), p(CBp2)
-    fCBm1, fCBm2 = p(CBm1), p(CBm2)
+    fCB1, fCB2 = p(CB1), p(CB2)
 
-    fBp = change_basis_core(real(fCBp1), imag(fCBp1), real(fCBp2), imag(fCBp2), mus)
-    fBm = change_basis_core(real(fCBm1), imag(fCBm1), real(fCBm2), imag(fCBm2), mmus)
+    fBp = change_basis_core(real(fCB1), imag(fCB1), real(fCB2), imag(fCB2), mus)
+    fBm = change_basis_core(real(fCB1), imag(fCB1), real(fCB2), imag(fCB2), mmus)
 
     return ((real(fCA1)+imag(fCA1)*mus[1]) .* fBp) + (((real(fCA2)+imag(fCA2)*mus[1])*mus[2]) .* fBm)
 end
 
 function qconv2_r(At,Bt,mus)
-    mmus = (-mus[1],-mus[2],mus[3])
+    mmus = (-mus[1], -mus[2], mus[3])
     Ba, Bb, Bc, Bd = change_basis_core(Bt, mus)
-    Apa, Apb, Apc, Apd = change_basis_core(At, mus)
+    Aa, Ab, Ac, Ad = change_basis_core(At, mus)
 
     CB1, CB2 = complex(Ba, Bb), complex(Bc, -Bd)
-    CAp1, CAp2 = complex(Apa, Apb), complex(Apc, -Apd)
-    CAm1, CAm2 = complex(Apa, -Apb), complex(-Apc, -Apd)
+    CA1, CA2 = complex(Aa, Ab), complex(Ac, -Ad)
 
     p = plan_fft(CB1)
     fCB1, fCB2 = p(CB1), p(CB2)
-    fCAp1, fCAp2 = p(CAp1), p(CAp2)
-    fCAm1, fCAm2 = p(CAm1), p(CAm2)
+    fCA1, fCA2 = p(CA1), p(CA2)
 
-    fAp = change_basis_core(real(fCAp1), imag(fCAp1), real(fCAp2), -imag(fCAp2), mus)
-    fAm = change_basis_core(real(fCAm1), imag(fCAm1), real(fCAm2), -imag(fCAm2), mmus)
+    fAp = change_basis_core(real(fCA1), imag(fCA1), real(fCA2), -imag(fCA2), mus)
+    fAm = change_basis_core(real(fCA1), imag(fCA1), real(fCA2), -imag(fCA2), mmus)
 
     return (fAp .* (real(fCB1)+imag(fCB1)*mus[1])) + (fAm .* ((real(fCB2)-imag(fCB2)*mus[1])*mus[2]))
 end
@@ -148,6 +144,8 @@ function qconv2{T<:Quaternion}(A::AbstractArray{T}, Bl::AbstractArray{T}, Br::Ab
     At[1:sa[1], 1:sa[2]] = A
     Bparat[1:sb[1], 1:sb[2]] = Bl .* Br
     Bperpt[1:sb[1], 1:sb[2]] = Bl .* conj(Br)
+    Bparat /= sum(map(norm,Bparat))
+    Bperpt /= sum(map(norm,Bperpt))
 
     Apara = map(x->para(x,mus[1]),At)
     Aperp = map(x->perp(x,mus[1]),At)
@@ -155,7 +153,7 @@ function qconv2{T<:Quaternion}(A::AbstractArray{T}, Bl::AbstractArray{T}, Br::Ab
     fApara = qconv2_l(Apara, Bparat, mus)
     fAperp = qconv2_l(Aperp, Bperpt, mus)
 
-    return iqft(fApara + fAperp,mu=mus)
+    return iqft(fApara + fAperp, mu=mus)
 end
 
 end # module
