@@ -3,7 +3,7 @@ isdefined(Base, :__precompile__) && __precompile__()
 module QuaternionFourierTransform
 
 using Quaternions
-export qft, iqft, qconv2
+export qft, iqft, qconv
 const defaultbasis = quaternion(0,1,1,1)/sqrt(3)
 
 function qft{T<:Quaternion}(x::AbstractArray{T}; mu::Union(T,NTuple{3,T})=defaultbasis, LR::Symbol=:left)
@@ -78,25 +78,7 @@ function change_basis_core{T<:Real, S<:Quaternion}(a::AbstractArray{T}, b::Abstr
     return a + b*mus[1] + c*mus[2] + d*mus[3]
 end
 
-function qconv2{T<:Quaternion}(A::AbstractArray{T}, B::AbstractArray{T}; mu::Union(T,NTuple{3,T})=defaultbasis, LR::Symbol=:left)
-    mus = orthonormal_basis(mu...)
-    sa, sb = size(A), size(B)
-    At = zeros(T, sa[1]+sb[1]-1, sa[2]+sb[2]-1)
-    Bt = zeros(T, sa[1]+sb[1]-1, sa[2]+sb[2]-1)
-    At[1:sa[1], 1:sa[2]] = A
-    Bt[1:sb[1], 1:sb[2]] = B
-
-    fC = if LR == :left
-        qconv2_l(At, Bt, mus)
-    elseif LR == :right
-        qconv2_r(At, Bt, mus)
-    else
-        error("LR must be :left or :right.")
-    end
-    return iqft(fC,mu=mus,LR=LR)
-end
-
-function qconv2_l(At,Bt,mus)
+function qconv_l(At,Bt,mus)
     mmus = (-mus[1], -mus[2], mus[3])
     Aa, Ab, Ac, Ad = change_basis_core(At, mus)
     Ba, Bb, Bc, Bd = change_basis_core(Bt, mus)
@@ -114,7 +96,7 @@ function qconv2_l(At,Bt,mus)
     return ((real(fCA1)+imag(fCA1)*mus[1]) .* fBp) + (((real(fCA2)+imag(fCA2)*mus[1])*mus[2]) .* fBm)
 end
 
-function qconv2_r(At,Bt,mus)
+function qconv_r(At,Bt,mus)
     mmus = (-mus[1], -mus[2], mus[3])
     Ba, Bb, Bc, Bd = change_basis_core(Bt, mus)
     Aa, Ab, Ac, Ad = change_basis_core(At, mus)
@@ -132,28 +114,37 @@ function qconv2_r(At,Bt,mus)
     return (fAp .* (real(fCB1)+imag(fCB1)*mus[1])) + (fAm .* ((real(fCB2)-imag(fCB2)*mus[1])*mus[2]))
 end
 
-function qconv2{T<:Quaternion}(A::AbstractArray{T}, Bl::AbstractArray{T}, Br::AbstractArray{T}; mu::Union(T,NTuple{3,T})=defaultbasis)
+function qconv{T<:Quaternion}(A::AbstractArray{T}, B::AbstractArray{T}; mu::Union(T,NTuple{3,T})=defaultbasis, LR=:left)
+    qconv_core = 
+    if LR == :left
+        qconv_l
+    elseif LR == :right  
+        qconv_r
+    else
+        error("LR must be :left or :right.")
+    end
+
     mus = orthonormal_basis(mu...)
 
-    sa, sb = size(A), size(Bl)
+    sa, sb = size(A), size(B)
     w, h = sa[1]+sb[1]-1, sa[2]+sb[2]-1
     At = zeros(eltype(A), w, h)
     Bparat = zeros(eltype(A), w, h)
     Bperpt = zeros(eltype(A), w, h)
 
     At[1:sa[1], 1:sa[2]] = A
-    Bparat[1:sb[1], 1:sb[2]] = Bl .* Br
-    Bperpt[1:sb[1], 1:sb[2]] = Bl .* conj(Br)
-    Bparat /= sum(map(norm,Bparat))
-    Bperpt /= sum(map(norm,Bperpt))
+    Bparat[1:sb[1], 1:sb[2]] = B .* conj(B)
+    Bperpt[1:sb[1], 1:sb[2]] = B .* B
+    Bparat /= sum(map(norm, Bparat))
+    Bperpt /= sum(map(norm, Bperpt))
 
-    Apara = map(x->para(x,mus[1]),At)
-    Aperp = map(x->perp(x,mus[1]),At)
+    Apara = map(x->para(x, mus[1]), At)
+    Aperp = map(x->perp(x, mus[1]), At)
 
-    fApara = qconv2_l(Apara, Bparat, mus)
-    fAperp = qconv2_l(Aperp, Bperpt, mus)
+    fApara = qconv_core(Apara, Bparat, mus)
+    fAperp = qconv_core(Aperp, Bperpt, mus)
 
-    return iqft(fApara + fAperp, mu=mus)
+    return iqft(fApara + fAperp, mu=mus, LR=LR)
 end
 
 end # module
