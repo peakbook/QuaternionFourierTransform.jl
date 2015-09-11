@@ -116,14 +116,15 @@ function test_convolution{T<:Quaternion}(qimg::AbstractArray{T})
     qfilter /= sum(map(norm,qfilter))
 
     # apply filter (left and right)
-    qconv = qconv2(qimg, qfilter, conj(qfilter))
+    qc = qconv(qimg, qfilter, LR=:left)
 
     # save as image
-    qperp = map(x->perp(x,mu), qconv)
-    qpara = map(x->para(x,mu), qconv)
+    qperp = map(x->perp(x,mu), qc)
+    qpara = map(x->para(x,mu), qc)
     saveimg(qperp, "conv_perp.png")
     saveimg(qpara, "conv_para.png")
-    saveimg(qconv, "conv.png")
+    saveimg(qc, "conv.png")
+    saveimg(qfilter, "filter.png")
 end
 
 function main()
