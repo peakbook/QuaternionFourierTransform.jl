@@ -87,8 +87,8 @@ function qconv_l(At,Bt,mus)
     CB1, CB2 = complex(Ba, Bb), complex(Bc, Bd)
 
     p = plan_fft(CA1)
-    fCA1, fCA2 = p(CA1), p(CA2)
-    fCB1, fCB2 = p(CB1), p(CB2)
+    fCA1, fCA2 = p*CA1, p*CA2
+    fCB1, fCB2 = p*CB1, p*CB2
 
     fBp = change_basis_core(real(fCB1), imag(fCB1), real(fCB2), imag(fCB2), mus)
     fBm = change_basis_core(real(fCB1), imag(fCB1), real(fCB2), imag(fCB2), mmus)
@@ -105,8 +105,8 @@ function qconv_r(At,Bt,mus)
     CA1, CA2 = complex(Aa, Ab), complex(Ac, -Ad)
 
     p = plan_fft(CB1)
-    fCB1, fCB2 = p(CB1), p(CB2)
-    fCA1, fCA2 = p(CA1), p(CA2)
+    fCB1, fCB2 = p*CB1, p*CB2
+    fCA1, fCA2 = p*CA1, p*CA2
 
     fAp = change_basis_core(real(fCA1), imag(fCA1), real(fCA2), -imag(fCA2), mus)
     fAm = change_basis_core(real(fCA1), imag(fCA1), real(fCA2), -imag(fCA2), mmus)
