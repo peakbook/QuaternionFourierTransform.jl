@@ -6,7 +6,7 @@ using Quaternions
 export qft, iqft, qconv
 const defaultbasis = quaternion(0,1,1,1)/sqrt(3)
 
-function qft{T<:Quaternion}(x::AbstractArray{T}; mu::Union(T,NTuple{3,T})=defaultbasis, LR::Symbol=:left)
+function qft{T<:Quaternion}(x::AbstractArray{T}; mu::Union{T,NTuple{3,T}}=defaultbasis, LR::Symbol=:left)
     mus = orthonormal_basis(mu...)
     if LR == :left
         qft_core(x, fft, mus, 1)
@@ -17,7 +17,7 @@ function qft{T<:Quaternion}(x::AbstractArray{T}; mu::Union(T,NTuple{3,T})=defaul
     end
 end
 
-function iqft{T<:Quaternion}(x::AbstractArray{T}; mu::Union(T,NTuple{3,T})=defaultbasis, LR::Symbol=:left)
+function iqft{T<:Quaternion}(x::AbstractArray{T}; mu::Union{T,NTuple{3,T}}=defaultbasis, LR::Symbol=:left)
     mus = orthonormal_basis(mu...)
     if LR == :left
         qft_core(x, ifft, mus, 1)
@@ -114,7 +114,7 @@ function qconv_r(At,Bt,mus)
     return (fAp .* (real(fCB1)+imag(fCB1)*mus[1])) + (fAm .* ((real(fCB2)-imag(fCB2)*mus[1])*mus[2]))
 end
 
-function qconv{T<:Quaternion}(A::AbstractArray{T}, B::AbstractArray{T}; mu::Union(T,NTuple{3,T})=defaultbasis, LR=:left)
+function qconv{T<:Quaternion}(A::AbstractArray{T}, B::AbstractArray{T}; mu::Union{T,NTuple{3,T}}=defaultbasis, LR=:left)
     qconv_core = 
     if LR == :left
         qconv_l
