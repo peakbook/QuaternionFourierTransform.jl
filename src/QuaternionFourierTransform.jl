@@ -5,8 +5,9 @@ module QuaternionFourierTransform
 using Quaternions
 export qft, iqft, qconv
 const defaultbasis = quaternion(0,1,1,1)/sqrt(3)
+getbasis(T::DataType) = convert(T, defaultbasis)
 
-function qft{T<:Quaternion}(x::AbstractArray{T}; mu::Union{T,NTuple{3,T}}=defaultbasis, LR::Symbol=:left)
+function qft{T<:Quaternion}(x::AbstractArray{T}; mu::Union{T,NTuple{3,T}}=getbasis(eltype(x)), LR::Symbol=:left)
     mus = orthonormal_basis(mu...)
     if LR == :left
         qft_core(x, fft, mus, 1)
@@ -17,7 +18,7 @@ function qft{T<:Quaternion}(x::AbstractArray{T}; mu::Union{T,NTuple{3,T}}=defaul
     end
 end
 
-function iqft{T<:Quaternion}(x::AbstractArray{T}; mu::Union{T,NTuple{3,T}}=defaultbasis, LR::Symbol=:left)
+function iqft{T<:Quaternion}(x::AbstractArray{T}; mu::Union{T,NTuple{3,T}}=getbasis(eltype(x)), LR::Symbol=:left)
     mus = orthonormal_basis(mu...)
     if LR == :left
         qft_core(x, ifft, mus, 1)
@@ -54,7 +55,7 @@ function orthonormal_basis(m1::Quaternion, m2::Quaternion, m3::Quaternion)
                  imagi(m2),imagj(m2),imagk(m2),
                  imagi(m3),imagj(m3),imagk(m3)],(3,3))
     
-    if maximum(m*m'-eye(3))>10*eps() 
+    if maximum(m*m'-eye(3))>10*eps(real(eltype(m))) 
         warn("The basis matrix is not accurately orthogonal.")
     end
 
@@ -114,7 +115,7 @@ function qconv_r(At,Bt,mus)
     return (fAp .* (real(fCB1)+imag(fCB1)*mus[1])) + (fAm .* ((real(fCB2)-imag(fCB2)*mus[1])*mus[2]))
 end
 
-function qconv{T<:Quaternion}(A::AbstractArray{T}, B::AbstractArray{T}; mu::Union{T,NTuple{3,T}}=defaultbasis, LR=:left)
+function qconv{T<:Quaternion}(A::AbstractArray{T}, B::AbstractArray{T}; mu::Union{T,NTuple{3,T}}=getbasis(eltype(A)), LR=:left)
     qconv_core = 
     if LR == :left
         qconv_l
