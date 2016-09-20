@@ -19,7 +19,7 @@ end
 function saveimg(x::AbstractArray,fname::String)
     img = convert(Image,x)
     img.properties["spatialorder"] = ["x","y"]
-    imwrite(img,fname)
+    save(fname, img)
 end
 
 function img2qmat(img::Image)
@@ -86,12 +86,14 @@ function test_freqfilter{T<:Quaternion}(qimg::AbstractArray{T})
     qfreqs = fftshift(qfreq)
 
     # high-pass filter
+    wrange = (size(qfreqs,1)>>3)*3+1:(size(qfreqs,1)>>3)*5
+    hrange = (size(qfreqs,2)>>3)*3+1:(size(qfreqs,2)>>3)*5
     q_high = copy(qfreqs)
-    q_high[end/8*3+1:end/8*5,end/8*3+1:end/8*5] = zero(T)
+    q_high[wrange, hrange] = zero(T)
 
     # low-pass filter
     q_low = zeros(T,size(qfreq))
-    q_low[end/8*3+1:end/8*5,end/8*3+1:end/8*5] = qfreqs[end/8*3+1:end/8*5,end/8*3+1:end/8*5]
+    q_low[wrange, hrange] = qfreqs[wrange, hrange]
 
     # exec inverse quaternion fft
     q_high = fftshift(q_high)
