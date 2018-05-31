@@ -4,7 +4,7 @@ module QuaternionFourierTransform
 
 using Quaternions
 export qft, iqft, qconv
-const defaultbasis = quaternion(0,1,1,1)/sqrt(3)
+const defaultbasis = Quaternion(0,1,1,1)/sqrt(3)
 getbasis(T::DataType) = convert(T, defaultbasis)
 
 function qft{T<:Quaternion}(x::AbstractArray{T}; mu::Union{T,NTuple{3,T}}=getbasis(eltype(x)), LR::Symbol=:left)
@@ -66,7 +66,7 @@ function change_basis{T<:Quaternion}(x::AbstractArray{T}, mus::NTuple{3,T}, inve
     if inverse
         change_basis_core(real(x),imagi(x),imagj(x),imagk(x),mus)
     else
-        quaternion(change_basis_core(x,mus)...)
+        Quaternion(change_basis_core(x,mus)...)
     end
 end
 
