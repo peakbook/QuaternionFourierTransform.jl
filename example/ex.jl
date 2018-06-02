@@ -24,7 +24,7 @@ function saveimg(x::AbstractArray,fname::String)
     save(fname, img)
 end
 
-function img2qmat(img::Image)
+function img2qmat(img::Image)::AbstractArray{Quaternion{Float64}}
     r = float(red(img))
     g = float(green(img))
     b = float(blue(img))
