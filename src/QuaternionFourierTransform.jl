@@ -33,7 +33,7 @@ function qft_core{T<:Quaternion}(x::AbstractArray{T}, ft::Function, mus::NTuple{
 end
 
 function orthonormal_basis(m1::Quaternion)::NTuple{3,Quaternion}
-    m2 = imag(rand(typeof(m1)))
+    m2 = imag(quatrand())
     m3 = imag(m2/m1)
     m2 = imag(m3/m1)
     m1 /= norm(m1)
