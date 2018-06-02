@@ -4,29 +4,26 @@ module QuaternionFourierTransform
 
 using Quaternions
 export qft, iqft, qconv
-const defaultbasis = quaternion(0,1,1,1)/sqrt(3)
+const defaultbasis = Quaternion(0,1,1,1)/sqrt(3)
 getbasis(T::DataType) = convert(T, defaultbasis)
+
+function lr(LR::Symbol = :left)::Int
+    if LR == :left
+        return 1
+    elseif LR == :right
+        return -1
+    else
+        error("LR must be :left or :right.")
+end
 
 function qft{T<:Quaternion}(x::AbstractArray{T}; mu::Union{T,NTuple{3,T}}=getbasis(eltype(x)), LR::Symbol=:left)
     mus = orthonormal_basis(mu...)
-    if LR == :left
-        qft_core(x, fft, mus, 1)
-    elseif LR == :right
-        qft_core(x, fft, mus, -1)
-    else
-        error("LR must be :left or :right.")
-    end
+    qft_core(x, fft, mus, lr(LR))
 end
 
 function iqft{T<:Quaternion}(x::AbstractArray{T}; mu::Union{T,NTuple{3,T}}=getbasis(eltype(x)), LR::Symbol=:left)
     mus = orthonormal_basis(mu...)
-    if LR == :left
-        qft_core(x, ifft, mus, 1)
-    elseif LR == :right  
-        qft_core(x, ifft, mus, -1)
-    else
-        error("LR must be :left or :right.")
-    end
+    qft_core(x, ifft, mus, lr(LR))
 end
 
 function qft_core{T<:Quaternion}(x::AbstractArray{T}, ft::Function, mus::NTuple{3,T}, s::Integer)
@@ -54,8 +51,8 @@ function orthonormal_basis(m1::Quaternion, m2::Quaternion, m3::Quaternion)
     m = reshape([imagi(m1),imagj(m1),imagk(m1),
                  imagi(m2),imagj(m2),imagk(m2),
                  imagi(m3),imagj(m3),imagk(m3)],(3,3))
-    
-    if maximum(m*m'-eye(3))>10*eps(real(eltype(m))) 
+
+    if maximum(m*m'-eye(3))>10*eps(real(eltype(m)))
         warn("The basis matrix is not accurately orthogonal.")
     end
 
@@ -66,7 +63,7 @@ function change_basis{T<:Quaternion}(x::AbstractArray{T}, mus::NTuple{3,T}, inve
     if inverse
         change_basis_core(real(x),imagi(x),imagj(x),imagk(x),mus)
     else
-        quaternion(change_basis_core(x,mus)...)
+        Quaternion.(change_basis_core(x,mus)...)
     end
 end
 
@@ -116,10 +113,10 @@ function qconv_r(At,Bt,mus)
 end
 
 function qconv{T<:Quaternion}(A::AbstractArray{T}, B::AbstractArray{T}; mu::Union{T,NTuple{3,T}}=getbasis(eltype(A)), LR=:left)
-    qconv_core = 
+    qconv_core =
     if LR == :left
         qconv_l
-    elseif LR == :right  
+    elseif LR == :right
         qconv_r
     else
         error("LR must be :left or :right.")
