@@ -14,6 +14,7 @@ function lr(LR::Symbol = :left)::Int
         return -1
     else
         error("LR must be :left or :right.")
+    end
 end
 
 function qft{T<:Quaternion}(x::AbstractArray{T}; mu::Union{T,NTuple{3,T}}=getbasis(eltype(x)), LR::Symbol=:left)
