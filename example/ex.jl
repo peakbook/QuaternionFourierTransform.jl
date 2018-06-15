@@ -4,13 +4,15 @@ using Images
 using Colors
 using TestImages
 
+const Image = Array{ColorTypes.RGB{FixedPointNumbers.Normed{UInt8,8}},2}
+
 function saveimg{T<:Quaternion}(x::AbstractArray{T},fname::String)
     m = cat(3, imagi(x), imagj(x), imagk(x))
     m = normalize(m)
     saveimg(m,fname)
 end
 
-function normalize(m::AbstractArray)
+function LinAlg.normalize(m::AbstractArray)
     mmax = maximum(m)
     mmin = minimum(m)
     return mmax==mmin ? zeros(size(m)) : (m - mmin)/(mmax-mmin)
@@ -22,12 +24,12 @@ function saveimg(x::AbstractArray,fname::String)
     save(fname, img)
 end
 
-function img2qmat(img::Image)
-    r = float(red(img.data))
-    g = float(green(img.data))
-    b = float(blue(img.data))
+function img2qmat(img::Image)::AbstractArray{Quaternion{Float64}}
+    r = float(red(img))
+    g = float(green(img))
+    b = float(blue(img))
     rezero = zeros(size(img))
-    return quaternion(rezero, r, g, b)
+    return Quaternion.(rezero, r, g, b)
 end
 
 function calc_arg{T<:Quaternion,S<:Real}(qfreq::AbstractArray{T},qnorm::AbstractArray{S})
@@ -43,7 +45,7 @@ end
 function calc_axis{T<:Quaternion,S<:Real}(qfreq::AbstractArray{T},qnorm::AbstractArray{S})
     map(qfreq,qnorm) do x,y
         if y==zero(S)
-            quaternion(y)
+            Quaternion.(y)
         else
             imag(x)/y
         end
@@ -90,6 +92,7 @@ function test_freqfilter{T<:Quaternion}(qimg::AbstractArray{T})
     hrange = (size(qfreqs,2)>>3)*3+1:(size(qfreqs,2)>>3)*5
     q_high = copy(qfreqs)
     q_high[wrange, hrange] = zero(T)
+
 
     # low-pass filter
     q_low = zeros(T,size(qfreq))
@@ -140,7 +143,7 @@ function main()
     test_qft(qimg)
     test_freqfilter(qimg)
     test_convolution(qimg)
+
 end
 
 main()
-
