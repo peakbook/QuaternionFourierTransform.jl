@@ -11,28 +11,22 @@ Discrete Quaternion Fourier Transform for Julia.
 ```julia
 using Quaternions
 using QuaternionFourierTransform
-using Images, TestImages
 
-img = testimage("lena_color_256")
-x = rand(Quaternion{Float64},4)
-
-r = float(red(img.data))
-g = float(green(img.data))
-b = float(blue(img.data))
-rezero = zeros(size(img))
-qmat = quaternion(rezero, r, g, b)
-
+qmat = imag(rand(Quaternion{Float64},10,10))
 qfreq = qft(qmat)
 iqmat = iqft(qfreq)
 
 # ...
 ```
 
+
 You can specify the orthonormal basis like this. Default is `QuaternionFourierTransform.defaultbasis`
 ```julia
 q = (quaternion(0,1,0,0),quaternion(0,0,1,0),quaternion(0,0,0,1))
 qft(m, mu=q)
 ```
+
+See [example](./example/ex.jl).
 
 ## Reference
 
