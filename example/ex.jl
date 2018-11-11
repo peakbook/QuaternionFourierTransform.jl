@@ -3,11 +3,13 @@ using QuaternionFourierTransform
 using Images
 using Colors
 using TestImages
+using FFTW
+using LinearAlgebra
 
-function saveimg{T<:Quaternion}(x::AbstractArray{T},fname::String)
-    m = cat(3, imagi(x), imagj(x), imagk(x))
-    m = normalize(m)
-    saveimg(m,fname)
+function qmat2img(x::AbstractArray{T}) where T<:Quaternion
+    m = cat(imagi(x), imagj(x), imagk(x), dims=3)
+    m = permutedims(m, (3,1,2))
+    return colorview(RGB, m)
 end
 
 function normalize(m::AbstractArray)
@@ -16,21 +18,14 @@ function normalize(m::AbstractArray)
     return mmax==mmin ? zeros(size(m)) : (m - mmin)/(mmax-mmin)
 end
 
-function saveimg(x::AbstractArray,fname::String)
-    img = convert(Image,x)
-    img.properties["spatialorder"] = ["x","y"]
-    save(fname, img)
-end
-
-function img2qmat(img::Image)
-    r = float(red(img.data))
-    g = float(green(img.data))
-    b = float(blue(img.data))
+function img2qmat(img::Array)
+    channels = float(channelview(img))
+    @assert size(channels)[1] == 3
     rezero = zeros(size(img))
-    return quaternion(rezero, r, g, b)
+    return quaternion(rezero, channels[1,:,:], channels[2,:,:], channels[3,:,:])
 end
 
-function calc_arg{T<:Quaternion,S<:Real}(qfreq::AbstractArray{T},qnorm::AbstractArray{S})
+function calc_arg(qfreq::AbstractArray{T},qnorm::AbstractArray{S}) where {T<:Quaternion,S<:Real}
     map(qfreq,qnorm) do x,y
         if y==zero(S)
             zero(S)
@@ -40,7 +35,7 @@ function calc_arg{T<:Quaternion,S<:Real}(qfreq::AbstractArray{T},qnorm::Abstract
     end
 end
 
-function calc_axis{T<:Quaternion,S<:Real}(qfreq::AbstractArray{T},qnorm::AbstractArray{S})
+function calc_axis(qfreq::AbstractArray{T},qnorm::AbstractArray{S}) where {T<:Quaternion,S<:Real}
     map(qfreq,qnorm) do x,y
         if y==zero(S)
             quaternion(y)
@@ -50,7 +45,7 @@ function calc_axis{T<:Quaternion,S<:Real}(qfreq::AbstractArray{T},qnorm::Abstrac
     end
 end
 
-function test_qft{T<:Quaternion}(qimg::AbstractArray{T})
+function test_qft(qimg::AbstractArray{T}) where T<:Quaternion
     # exec quaternion fft
     qfreq = qft(qimg)
 
@@ -69,16 +64,16 @@ function test_qft{T<:Quaternion}(qimg::AbstractArray{T})
     axis = map(x->RGB(0.5*(imagi(x)+1), 0.5*(imagj(x)+1), 0.5*(imagk(x)+1)), qaxis)
 
     # save as images
-    saveimg(modulus, "modulus.png")
-    saveimg(phase, "phase.png")
-    saveimg(axis, "axis.png")
+    save("modulus.png", colorview(Gray,modulus))
+    save("phase.png", phase)
+    save("axis.png", axis)
 
     # exec inverse quaternion fft
     qinv = iqft(qfreq)
-    saveimg(qinv, "inv.png")
+    save("inv.png", qmat2img(qinv))
 end
 
-function test_freqfilter{T<:Quaternion}(qimg::AbstractArray{T})
+function test_freqfilter(qimg::AbstractArray{T}) where T<:Quaternion
     # exec quaternion fft
     qfreq = qft(qimg)
 
@@ -89,7 +84,7 @@ function test_freqfilter{T<:Quaternion}(qimg::AbstractArray{T})
     wrange = (size(qfreqs,1)>>3)*3+1:(size(qfreqs,1)>>3)*5
     hrange = (size(qfreqs,2)>>3)*3+1:(size(qfreqs,2)>>3)*5
     q_high = copy(qfreqs)
-    q_high[wrange, hrange] = zero(T)
+    q_high[wrange, hrange] .= zero(T)
 
     # low-pass filter
     q_low = zeros(T,size(qfreq))
@@ -102,19 +97,19 @@ function test_freqfilter{T<:Quaternion}(qimg::AbstractArray{T})
     q_iqft_low = iqft(q_low)
 
     # save as image
-    saveimg(q_iqft_high, "high.png")
-    saveimg(q_iqft_low, "low.png")
+    save("high.png", qmat2img(q_iqft_high))
+    save("low.png", qmat2img(q_iqft_low))
 end
 
-function test_convolution{T<:Quaternion}(qimg::AbstractArray{T})
+function test_convolution(qimg::AbstractArray{T}) where T<:Quaternion
     # gray line
     mu = QuaternionFourierTransform.defaultbasis
 
     # create filter (Prewitt inspired color chromatic edge detection)
     qfilter = zeros(Quaternion{Float64}, 3,3)
     q = exp(mu*pi/4)
-    qfilter[1,1:end] = q
-    qfilter[end,1:end] = conj(q)
+    qfilter[1,1:end] .= q
+    qfilter[end,1:end] .= conj(q)
     qfilter /= sum(map(norm,qfilter))
 
     # apply filter (left and right)
@@ -123,10 +118,10 @@ function test_convolution{T<:Quaternion}(qimg::AbstractArray{T})
     # save as image
     qperp = map(x->perp(x,mu), qc)
     qpara = map(x->para(x,mu), qc)
-    saveimg(qperp, "conv_perp.png")
-    saveimg(qpara, "conv_para.png")
-    saveimg(qc, "conv.png")
-    saveimg(qfilter, "filter.png")
+    save("conv_perp.png", qmat2img(qperp))
+    save("conv_para.png", qmat2img(qpara))
+    save("conv.png", qmat2img(qc))
+    save("filter.png", qmat2img(qfilter))
 end
 
 function main()

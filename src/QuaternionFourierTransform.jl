@@ -1,13 +1,15 @@
 __precompile__()
 
 module QuaternionFourierTransform
+import LinearAlgebra: norm, I
+import FFTW: fft, ifft, plan_fft
 
 using Quaternions
 export qft, iqft, qconv
 const defaultbasis = Quaternion(0,1,1,1)/sqrt(3)
 getbasis(T::DataType) = convert(T, defaultbasis)
 
-function qft{T<:Quaternion}(x::AbstractArray{T}; mu::Union{T,NTuple{3,T}}=getbasis(eltype(x)), LR::Symbol=:left)
+function qft(x::AbstractArray{T}; mu::Union{T,NTuple{3,T}}=getbasis(eltype(x)), LR::Symbol=:left) where T<:Quaternion
     mus = orthonormal_basis(mu...)
     if LR == :left
         qft_core(x, fft, mus, 1)
@@ -18,7 +20,7 @@ function qft{T<:Quaternion}(x::AbstractArray{T}; mu::Union{T,NTuple{3,T}}=getbas
     end
 end
 
-function iqft{T<:Quaternion}(x::AbstractArray{T}; mu::Union{T,NTuple{3,T}}=getbasis(eltype(x)), LR::Symbol=:left)
+function iqft(x::AbstractArray{T}; mu::Union{T,NTuple{3,T}}=getbasis(eltype(x)), LR::Symbol=:left) where T<:Quaternion
     mus = orthonormal_basis(mu...)
     if LR == :left
         qft_core(x, ifft, mus, 1)
@@ -29,9 +31,9 @@ function iqft{T<:Quaternion}(x::AbstractArray{T}; mu::Union{T,NTuple{3,T}}=getba
     end
 end
 
-function qft_core{T<:Quaternion}(x::AbstractArray{T}, ft::Function, mus::NTuple{3,T}, s::Integer)
+function qft_core(x::AbstractArray{T}, ft::Function, mus::NTuple{3,T}, s::Integer) where T<:Quaternion
     a, b, c, d = change_basis_core(x, mus)
-    fc1, fc2 = ft(complex(a, b)), ft(complex(c, s*d))
+    fc1, fc2 = ft(complex.(a, b)), ft(complex.(c, s*d))
     change_basis_core(real(fc1), imag(fc1), real(fc2), s*imag(fc2), mus)
 end
 
@@ -55,14 +57,14 @@ function orthonormal_basis(m1::Quaternion, m2::Quaternion, m3::Quaternion)
                  imagi(m2),imagj(m2),imagk(m2),
                  imagi(m3),imagj(m3),imagk(m3)],(3,3))
     
-    if maximum(m*m'-eye(3))>10*eps(real(eltype(m))) 
+    if maximum(m*m'-Matrix{typeof(real(m1))}(I,3,3))>10*eps(real(eltype(m))) 
         warn("The basis matrix is not accurately orthogonal.")
     end
 
     return (m1,m2,m3)
 end
 
-function change_basis{T<:Quaternion}(x::AbstractArray{T}, mus::NTuple{3,T}, inverse::Bool=false)
+function change_basis(x::AbstractArray{T}, mus::NTuple{3,T}, inverse::Bool=false) where T<:Quaternion
     if inverse
         change_basis_core(real(x),imagi(x),imagj(x),imagk(x),mus)
     else
@@ -70,12 +72,12 @@ function change_basis{T<:Quaternion}(x::AbstractArray{T}, mus::NTuple{3,T}, inve
     end
 end
 
-function change_basis_core{T<:Quaternion}(x::AbstractArray{T}, mus::NTuple{3,T})
+function change_basis_core(x::AbstractArray{T}, mus::NTuple{3,T}) where T<:Quaternion
     x_im = imag(x)
     return real(x), -real(map(x->x|mus[1],x_im)), -real(map(x->x|mus[2],x_im)), -real(map(x->x|mus[3],x_im))
 end
 
-function change_basis_core{T<:Real, S<:Quaternion}(a::AbstractArray{T}, b::AbstractArray{T}, c::AbstractArray{T}, d::AbstractArray{T}, mus::NTuple{3,S})
+function change_basis_core(a::AbstractArray{T}, b::AbstractArray{T}, c::AbstractArray{T}, d::AbstractArray{T}, mus::NTuple{3,S}) where {T<:Real, S<:Quaternion}
     return a + b*mus[1] + c*mus[2] + d*mus[3]
 end
 
@@ -84,8 +86,8 @@ function qconv_l(At,Bt,mus)
     Aa, Ab, Ac, Ad = change_basis_core(At, mus)
     Ba, Bb, Bc, Bd = change_basis_core(Bt, mus)
 
-    CA1, CA2 = complex(Aa, Ab), complex(Ac, Ad)
-    CB1, CB2 = complex(Ba, Bb), complex(Bc, Bd)
+    CA1, CA2 = complex.(Aa, Ab), complex.(Ac, Ad)
+    CB1, CB2 = complex.(Ba, Bb), complex.(Bc, Bd)
 
     p = plan_fft(CA1)
     fCA1, fCA2 = p*CA1, p*CA2
@@ -102,8 +104,8 @@ function qconv_r(At,Bt,mus)
     Ba, Bb, Bc, Bd = change_basis_core(Bt, mus)
     Aa, Ab, Ac, Ad = change_basis_core(At, mus)
 
-    CB1, CB2 = complex(Ba, Bb), complex(Bc, -Bd)
-    CA1, CA2 = complex(Aa, Ab), complex(Ac, -Ad)
+    CB1, CB2 = complex.(Ba, Bb), complex.(Bc, -Bd)
+    CA1, CA2 = complex.(Aa, Ab), complex.(Ac, -Ad)
 
     p = plan_fft(CB1)
     fCB1, fCB2 = p*CB1, p*CB2
@@ -115,7 +117,7 @@ function qconv_r(At,Bt,mus)
     return (fAp .* (real(fCB1)+imag(fCB1)*mus[1])) + (fAm .* ((real(fCB2)-imag(fCB2)*mus[1])*mus[2]))
 end
 
-function qconv{T<:Quaternion}(A::AbstractArray{T}, B::AbstractArray{T}; mu::Union{T,NTuple{3,T}}=getbasis(eltype(A)), LR=:left)
+function qconv(A::AbstractArray{T}, B::AbstractArray{T}; mu::Union{T,NTuple{3,T}}=getbasis(eltype(A)), LR=:left) where T<:Quaternion
     qconv_core = 
     if LR == :left
         qconv_l
