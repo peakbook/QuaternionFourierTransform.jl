@@ -9,26 +9,26 @@ export qft, iqft, qconv
 const defaultbasis = Quaternion(0,1,1,1)/sqrt(3)
 getbasis(T::DataType) = convert(T, defaultbasis)
 
-function qft(x::AbstractArray{T}; mu::Union{T,NTuple{3,T}}=getbasis(eltype(x)), LR::Symbol=:left) where T<:Quaternion
-    mus = orthonormal_basis(mu...)
+function direction(LR::Symbol)::Integer
     if LR == :left
-        qft_core(x, fft, mus, 1)
+        return 1
     elseif LR == :right
-        qft_core(x, fft, mus, -1)
+        return -1
     else
         error("LR must be :left or :right.")
     end
 end
 
+function qft(x::AbstractArray{T}; mu::Union{T,NTuple{3,T}}=getbasis(eltype(x)), LR::Symbol=:left) where T<:Quaternion
+    mus = orthonormal_basis(mu...)
+    dir = direction(LR)
+    qft_core(x, fft, mus, dir)
+end
+
 function iqft(x::AbstractArray{T}; mu::Union{T,NTuple{3,T}}=getbasis(eltype(x)), LR::Symbol=:left) where T<:Quaternion
     mus = orthonormal_basis(mu...)
-    if LR == :left
-        qft_core(x, ifft, mus, 1)
-    elseif LR == :right
-        qft_core(x, ifft, mus, -1)
-    else
-        error("LR must be :left or :right.")
-    end
+    dir = direction(LR)
+    qft_core(x, ifft, mus, dir)
 end
 
 function qft_core(x::AbstractArray{T}, ft::Function, mus::NTuple{3,T}, s::Integer) where T<:Quaternion
