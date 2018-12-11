@@ -24,7 +24,7 @@ function iqft(x::AbstractArray{T}; mu::Union{T,NTuple{3,T}}=getbasis(eltype(x)),
     mus = orthonormal_basis(mu...)
     if LR == :left
         qft_core(x, ifft, mus, 1)
-    elseif LR == :right  
+    elseif LR == :right
         qft_core(x, ifft, mus, -1)
     else
         error("LR must be :left or :right.")
@@ -48,16 +48,13 @@ function orthonormal_basis(m1::Quaternion)
 end
 
 function orthonormal_basis(m1::Quaternion, m2::Quaternion, m3::Quaternion)
-    @assert(
-    real(m1) == zero(typeof(real(m1))) &&
-    real(m2) == zero(typeof(real(m2))) &&
-    real(m3) == zero(typeof(real(m3))), "The transform axis must be a pure quaternion.")
+    @assert(ispure(m1) && ispure(m2) && ispure(m3), "The transform axis must be a pure quaternion.")
 
     m = reshape([imagi(m1),imagj(m1),imagk(m1),
                  imagi(m2),imagj(m2),imagk(m2),
                  imagi(m3),imagj(m3),imagk(m3)],(3,3))
-    
-    if maximum(m*m'-Matrix{typeof(real(m1))}(I,3,3))>10*eps(real(eltype(m))) 
+
+    if maximum(m*m'-Matrix{typeof(real(m1))}(I,3,3))>10*eps(real(eltype(m)))
         warn("The basis matrix is not accurately orthogonal.")
     end
 
@@ -118,10 +115,10 @@ function qconv_r(At,Bt,mus)
 end
 
 function qconv(A::AbstractArray{T}, B::AbstractArray{T}; mu::Union{T,NTuple{3,T}}=getbasis(eltype(A)), LR=:left) where T<:Quaternion
-    qconv_core = 
+    qconv_core =
     if LR == :left
         qconv_l
-    elseif LR == :right  
+    elseif LR == :right
         qconv_r
     else
         error("LR must be :left or :right.")

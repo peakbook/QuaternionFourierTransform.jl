@@ -27,7 +27,7 @@ end
 
 function calc_arg(qfreq::AbstractArray{T},qnorm::AbstractArray{S}) where {T<:Quaternion,S<:Real}
     map(qfreq,qnorm) do x,y
-        if y==zero(S)
+        if iszero(y)
             zero(S)
         else
             acos(real(x)/norm(x))
@@ -37,7 +37,7 @@ end
 
 function calc_axis(qfreq::AbstractArray{T},qnorm::AbstractArray{S}) where {T<:Quaternion,S<:Real}
     map(qfreq,qnorm) do x,y
-        if y==zero(S)
+        if iszero(y)
             quaternion(y)
         else
             imag(x)/y
@@ -138,4 +138,3 @@ function main()
 end
 
 main()
-
