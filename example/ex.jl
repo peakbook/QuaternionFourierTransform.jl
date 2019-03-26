@@ -9,7 +9,8 @@ using LinearAlgebra
 function qmat2img(x::AbstractArray{T}) where T<:Quaternion
     m = cat(imagi(x), imagj(x), imagk(x), dims=3)
     m = permutedims(m, (3,1,2))
-    return colorview(RGB, m)
+    f = scaleminmax(minimum(m), maximum(m))
+    return colorview(RGB, f.(m))
 end
 
 function normalize(m::AbstractArray)
