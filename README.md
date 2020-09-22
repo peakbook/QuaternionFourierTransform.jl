@@ -9,6 +9,12 @@ Discrete Quaternion Fourier Transform for Julia.
 
 - [Quaternions.jl](https://github.com/peakbook/Quaternions.jl) (not official package)
 
+## Installation
+```julia
+pkg> add https://github.com/peakbook/Quaternions.jl
+pkg> add https://github.com/peakbook/QuaternionFourierTransform.jl
+```
+
 ## Example
 
 ```julia
