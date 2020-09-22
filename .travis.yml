@@ -1,12 +1,13 @@
 language: julia
 os:
   - linux
-  - osx
 julia:
-  - release
+  - 1
   - nightly
 notifications:
   email: false
+after_success:
+  - julia -e 'using Pkg; cd(Pkg.dir("QuaternionFourierTransform")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
 # uncomment the following lines to override the default test script
 #script:
 #  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi

@@ -1,5 +1,3 @@
-__precompile__()
-
 module QuaternionFourierTransform
 import LinearAlgebra: norm, I
 import FFTW: fft, ifft, plan_fft

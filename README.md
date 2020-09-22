@@ -1,5 +1,8 @@
 # QuaternionFourierTransform.jl
 
+[![Build Status](https://travis-ci.org/peakbook/QuaternionFourierTransform.jl.svg?branch=master)](https://travis-ci.org/peakbook/QuaternionFourierTransform.jl)
+[![Coverage Status](https://coveralls.io/repos/peakbook/QuaternionFourierTransform.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/peakbook/QuaternionFourierTransform.jl?branch=master)
+
 Discrete Quaternion Fourier Transform for Julia.
 
 ## Requirements
@@ -12,16 +15,23 @@ Discrete Quaternion Fourier Transform for Julia.
 using Quaternions
 using QuaternionFourierTransform
 
-qmat = imag(rand(Quaternion{Float64},10,10))
+qmat = imag(rand(QuaternionF64, 10, 10))
+
+# QFT
 qfreq = qft(qmat)
+
+# IQFT
 iqmat = iqft(qfreq)
 
-# ...
+# Convolution
+qfilter = ...
+qconv(qmat, qfilter)
 ```
 
 
-You can specify the orthonormal basis like this. Default is `QuaternionFourierTransform.defaultbasis`
+You can specify the orthonormal basis as follows:
 ```julia
+# Default value is `QuaternionFourierTransform.defaultbasis`
 q = (quaternion(0,1,0,0),quaternion(0,0,1,0),quaternion(0,0,0,1))
 qft(m, mu=q)
 ```
